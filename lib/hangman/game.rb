@@ -1,11 +1,13 @@
-require_relative "man"
-require "pry-byebug"
+require_relative 'man'
+require 'pry-byebug'
+require 'yaml'
+
 # The mastermind
 class Game
   def initialize
     @number_of_wront_guesses_made = 0
     @guessed_words = []
-    @guess = []
+    @correct_guesses = []
     pick_random_word
     @man = Man.new
     @guessed_char = []
@@ -13,7 +15,7 @@ class Game
 
   def pick_random_word
     loop do
-      answer = File.readlines("Words.txt").sample.chomp.chars
+      answer = File.readlines('Words.txt').sample.chomp.chars
 
       unless @guessed_words.include?(answer.join)
         @answer = answer
@@ -22,11 +24,11 @@ class Game
     end
 
     @guessed_words.push(@answer.join)
-    @guess = Array.new(@answer.length)
+    @correct_guesses = Array.new(@answer.length)
   end
 
   def check_result
-    if @guess == @answer
+    if @correct_guesses == @answer
       puts "\nCongratulations! You guessed the word: #{@answer.join.capitalize}"
       1
     elsif @number_of_wront_guesses_made == 7
@@ -48,26 +50,53 @@ class Game
     puts "-----------------------------------
          #{@man.hangman_stages[@number_of_wront_guesses_made]}"
 
-    @guess.each_with_index do |letter, index|
+    @correct_guesses.each_with_index do |letter, index|
       if letter && index == 0
         print "#{letter.upcase} "
       elsif letter
         print "#{letter} "
       else
-        print "_ "
+        print '_ '
       end
     end
   end
 
+  def save_game
+    File.open('save.yaml', 'w') do |file|
+      YAML.dump({
+                  number_of_wront_guesses_made: @number_of_wront_guesses_made,
+                  guessed_words: [@answer.join.to_s],
+                  correct_guesses: @correct_guesses,
+                  answer: @answer,
+                  guessed_char: @guessed_char
+                }, file)
+    end
+    puts 'Game saved!'
+  end
+
+  def handle_save_input(input)
+    if input == 'save' && !@guessed_char.empty?
+      save_game
+      return true
+    elsif input == 'save'
+      puts "You can't save in the very first turn! Make a guess!"
+    end
+    false
+  end
+
   def fetch_input
-    puts "\nInput a single non-digit character:"
+    puts "\nInput a single non-digit character:\nType 'Save' if you want to save"
+
     loop do
       input = gets.chomp.downcase
+      return input if handle_save_input(input)
+      next if input == 'save'
+
       if input.length == 1 && input.match?(/\D/) && !@guessed_char.include?(input)
         @guessed_char.push(input)
         return input
       else
-        puts "Invalid input. Please input a single non-digit character that hasn't been guessed."
+        puts "Invalid input. Please input a single non-digit character that hasn't been guessed or retype 'save'."
       end
     end
   end
@@ -75,23 +104,26 @@ class Game
   def handle_guess
     show_guessed_char
     input = fetch_input
+    return input if input == 'save'
+
     wrong = false
     @answer.each_with_index do |letter, index|
       if input == letter
-        @guess[index] = input
+        @correct_guesses[index] = input
         wrong = true
       end
     end
+
     @number_of_wront_guesses_made += 1 unless wrong
   end
 
   def start_game
     loop do
-      handle_guess
+      return nil if handle_guess == 'save'
       next unless check_result
 
-      puts "Would you like to play again?"
-      return nil unless gets.chomp.downcase == "yes"
+      puts 'Would you like to play again?'
+      return nil unless gets.chomp.downcase == 'yes'
 
       reset
     end
