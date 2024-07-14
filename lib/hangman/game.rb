@@ -11,6 +11,7 @@ class Game
     pick_random_word
     @man = Man.new
     @guessed_char = []
+    start_menu
   end
 
   def pick_random_word
@@ -72,6 +73,38 @@ class Game
                 }, file)
     end
     puts 'Game saved!'
+  end
+
+  def load_save
+    if File.exist?('save.yaml')
+      data = YAML.load_file('save.yaml')
+      @number_of_wront_guesses_made = data[:number_of_wront_guesses_made]
+      @guessed_words = data[:guessed_words]
+      @correct_guesses = data[:correct_guesses]
+      @answer = data[:answer]
+      @guessed_char = data[:guessed_char]
+      puts "Save loaded!\n Press any key to continue"
+      gets.chomp
+      start_game
+    else
+      "Save file doesn't exist."
+    end
+  end
+
+  def start_menu
+    puts 'Welcome to Hangman!'
+    puts  "\nGet ready to play the classic word-guessing game!"
+    puts  "Can you solve the mystery word before it's too late?"
+    puts  "\nEnter '1' to start a new game."
+    puts  "Enter '2' to load a saved game."
+    puts  'Enter else to cancel.'
+    input = gets.chomp
+    if input == '1'
+      start_game
+    elsif input == '2'
+      load_save
+    end
+    puts 'Bye bye!'
   end
 
   def handle_save_input(input)
