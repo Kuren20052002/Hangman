@@ -87,7 +87,7 @@ class Game
       gets.chomp
       start_game
     else
-      "Save file doesn't exist."
+      puts "Save file doesn't exist."
     end
   end
 
